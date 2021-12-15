@@ -1,4 +1,4 @@
-# Programming
+# Scripting
 
 [Back to contents](README.md)
 
