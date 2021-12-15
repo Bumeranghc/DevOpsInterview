@@ -8,5 +8,7 @@ Pick the appropriate section:
 
 [Programming](Programming.md)
 
+[Scripting](Scripting.md)
+
 
 
