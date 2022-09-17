@@ -1,0 +1,44 @@
+##########################
+# UBUNTU SIMPLE PLAYBOOK #
+##########################
+---
+- hosts: "192.168.50.7" # применяем команды ко всем хостам из inventory
+  become: true # становимся привилегированным пользователем
+  tasks: # список тасков
+  - name: "Install nginx via apt" # имя, обязательно для любой таски из плейбука, должно содержать описание того что эта таска делает
+    ansible.builtin.apt: # имя модуля, этот модуль устанавливает софт на хосте с помощью пакета apt
+      name: "nginx" # имя пакета для установки
+      state: "latest" # установить последнюю версию пакета, в отличие от present, если пакет уже установлен в системе, попробует его обновить
+      update_cache: true # вызвать apt update перед установкой, чтобы убедиться в наличии самой свежей базы данных о пакетах
+
+  - name: "Delete /var/www/html folder"
+    ansible.builtin.file: # этот модуль работает с файлами и папками на удаленной машине
+      path: "/var/www/html" # путь к файлу/папке на удаленной машине
+      state: "absent" # перевести папку в состояние absent - то есть удалить ее
+
+  - name: "Copy our landing to /var/www/html folder"
+    ansible.builtin.copy: # этот модуль копирует файлы/директории с контрольной ноды на хосты
+      src: "files/html" # путь к файлу/директории для копирования на контрольной ноде
+      dest: "/var/www/" # путь для вставки на удаленной машине, вставка папок ВСЕГДА будет осуществляться внутрь папки, ансибл никогда не будет подменять папки или переименовывать их
+      owner: "vagrant" # пользователь владелец файла/директории на удаленной машине
+      group: "vagrant" # группа владелец файла/директории на удаленной машине
+      mode: "0644" # права доступа к файлу/директории
+
+  - name: "Copy nginx config for testing"
+    ansible.builtin.copy:
+      src: "files/nginx.conf"
+      dest: "/etc/nginx/sites-available/mytestsite.com.conf"
+      owner: "vagrant"
+      group: "vagrant"
+      mode: "0644"
+
+  - name: "Link folder"
+    ansible.builtin.file:
+      src: "/etc/nginx/sites-available/mytestsite.com.conf"
+      dest: "/etc/nginx/sites-enabled/mytestsite.com"
+      state: "link" # здесь создаем симлинк
+
+  - name: "Reload nginx"
+    ansible.builtin.service:
+      name: "nginx"
+      state: "reloaded"

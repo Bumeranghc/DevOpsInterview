@@ -1,0 +1,42 @@
+  - name: "Install epel via yum" # имя, обязательно для любой таски из плейбука, должно содержать описание того что эта таска делает
+    vars:
+      ansible_python_interpreter: "/usr/bin/python2.7"
+    ansible.builtin.yum: # имя модуля, этот модуль устанавливает софт на хосте с помощью пакета yum
+      name: "epel-release" # имя пакета для установки
+      state: "latest" # установить последнюю версию пакета, в отличие от present, если пакет уже установлен в системе, попробует его обновить
+      update_cache: true
+
+  - name: "Install nginx via yum" # имя, обязательно для любой таски из плейбука, должно содержать описание того что эта таска делает
+    vars:
+      ansible_python_interpreter: "/usr/bin/python2.7"
+    ansible.builtin.yum: # имя модуля, этот модуль устанавливает софт на хосте с помощью пакета yum
+      name: "nginx" # имя пакета для установки
+      state: "latest" # установить последнюю версию пакета, в отличие от present, если пакет уже установлен в системе, попробует его обновить
+      update_cache: true
+
+  - name: "Delete /usr/share/nginx/html folder"
+    ansible.builtin.file: # этот модуль работает с файлами и папками на удаленной машине
+      path: "/usr/share/nginx/html" # путь к файлу/папке на удаленной машине
+      state: "absent" # перевести папку в состояние absent - то есть удалить ее
+
+  - name: "Copy our landing to /usr/share/nginx/html folder"
+    ansible.builtin.copy: # этот модуль копирует файлы/директории с контрольной ноды на хосты
+      src: "files/html" # путь к файлу/директории для копирования на контрольной ноде
+      dest: "/usr/share/nginx/" # путь для вставки на удаленной машине, вставка папок ВСЕГДА будет осуществляться внутрь папки, ансибл никогда не будет подменять папки или переименовывать их
+      owner: "vagrant" # пользователь владелец файла/директории на удаленной машине
+      group: "vagrant" # группа владелец файла/директории на удаленной машине
+      mode: "0644" # права доступа к файлу/директории
+
+  - name: "Copy nginx global config"
+    ansible.builtin.copy:
+      src: "files/nginx.conf"
+      dest: "/etc/nginx/nginx.conf"
+      owner: "root"
+      group: "root"
+      mode: "0644"
+
+  - name: "Start mysql"
+    ansible.builtin.service:
+      name: "php-fpm"
+      state: "started"
+      enabled: true

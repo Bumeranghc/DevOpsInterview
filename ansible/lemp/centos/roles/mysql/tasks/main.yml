@@ -1,0 +1,64 @@
+  - name: "Install mysql repo via yum"
+    ansible.builtin.yum:
+      name: "https://dev.mysql.com/get/mysql57-community-release-el7-9.noarch.rpm"
+      state: "latest"
+      update_cache: true
+
+  - name: Import a mysql repo key from a url
+    ansible.builtin.rpm_key:
+      state: present
+      key: https://repo.mysql.com/RPM-GPG-KEY-mysql-2022
+
+  - name: "Install mysql via yum"
+    ansible.builtin.yum:
+      name: "mysql-server"
+      state: "latest"
+      update_cache: true
+
+  - name: "Install pymysql via yum"
+    ansible.builtin.yum:
+      name: "python2-PyMySQL" # необходим для работы модулей mysql
+      state: "latest"
+      update_cache: true
+
+  - name: "Start mysql"
+    ansible.builtin.service:
+      name: "mysqld"
+      state: "started"
+      enabled: true
+
+  - name: "Get temporary mysql root password"
+    ansible.builtin.shell: >-
+        grep 'temporary password' /var/log/mysqld.log | 
+        awk '{print $NF}' | tail -n 1
+    register: temp_root_pw
+    no_log: true
+    ignore_errors: true
+
+  - name: "Reset expired mysql root password"
+    ansible.builtin.shell: >-
+        mysql -e "SET PASSWORD = PASSWORD('W3lcome!');" --connect-expired-password -uroot -p"{{ temp_root_pw.stdout }}"
+    no_log: true
+    ignore_errors: true
+
+  - name: "Set up root user"
+    community.mysql.mysql_user: # модуль для управления пользователями 
+      name: "root" # имя пользователя для редактирования, обратите внимание на единообразие параметров модулей
+      password: "password" # пароль пользователя для редактирования
+      login_user: "root" # имя пользователя, под которым вносим изменения
+      login_password: "W3lcome!" # пароль пользователя под которым редактируем
+    ignore_errors: true
+  
+  - name: "Remove anonymous users"
+    community.mysql.mysql_user:
+      name: "" # анонимные пользователи не имеют имени
+      state: "absent" # как и с модулем file - удалить
+      login_user: "root"
+      login_password: "password"
+
+  - name: "Remove test database"
+    community.mysql.mysql_db: # модуль для управления базами данных
+      name: "test" # тут это имя базы
+      state: "absent" # как и с модулем file - удалить
+      login_user: "root"
+      login_password: "password"
